@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pelacak Link</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold mb-4 text-center">Buat Tracking Link</h1>
+        <div class="mb-4">
+            <label for="destination" class="block text-sm font-medium text-gray-700">URL Tujuan</label>
+            <input type="url" id="destination" class="mt-1 p-2 w-full border rounded-md" placeholder="https://contoh.com" required>
+        </div>
+        <button id="generate" class="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">Buat Link</button>
+        <p id="result" class="mt-4 text-sm text-gray-600 hidden">Link pelacakan kamu: <a id="trackingLink" href="#" target="_blank" class="text-blue-500"></a></p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mt-6">
+        <h2 class="text-xl font-bold mb-4">Data Klik</h2>
+        <table id="clickData" class="w-full text-sm text-left text-gray-500">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="p-2">ID Link</th>
+                    <th class="p-2">Waktu</th>
+                    <th class="p-2">Negara</th>
+                    <th class="p-2">Kota</th>
+                    <th class="p-2">IP</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const apiBaseUrl = 'https://link-tracker-backend.vercel.app/'; // Ganti dengan URL Vercel kamu (contoh: https://link-tracker-backend-123.vercel.app/api)
+        const supabaseUrl = 'https://uwwrkoxfzhlhjnvudbbj.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3d3Jrb3hmemhsaGpudnVkYmJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MTI2OTAsImV4cCI6MjA2MTI4ODY5MH0.zzXtus7uo-ol0tgPCLkAl8muZPbcRFQGeoblzY0xAIY';
+
+        async function generateTrackingLink() {
+            const destination = document.getElementById('destination').value;
+            if (!destination) {
+                alert('Masukkan URL yang valid');
+                return;
+            }
+
+            const response = await fetch(`${apiBaseUrl}/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ destination })
+            });
+            const data = await response.json();
+            const trackingLink = `${apiBaseUrl}/track/${data.linkId}`;
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('trackingLink').href = trackingLink;
+            document.getElementById('trackingLink').textContent = trackingLink;
+        }
+
+        async function fetchClickData() {
+            const response = await fetch(`${apiBaseUrl}/clicks`);
+            const data = await response.json();
+            const tbody = document.querySelector('#clickData tbody');
+            tbody.innerHTML = '';
+            data.forEach(click => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-2">${click.link_id}</td>
+                    <td class="p-2">${new Date(click.timestamp).toLocaleString()}</td>
+                    <td class="p-2">${click.country || 'Tidak diketahui'}</td>
+                    <td class="p-2">${click.city || 'Tidak diketahui'}</td>
+                    <td class="p-2">${click.ip}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        document.getElementById('generate').addEventListener('click', generateTrackingLink);
+        fetchClickData();
+        setInterval(fetchClickData, 30000); // Segarkan setiap 30 detik
+    </script>
+</body>
+</html>
